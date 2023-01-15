@@ -169,14 +169,15 @@
         var b = new Int16Array(offsets[offsets.length - 1]);
         for(var i = 0; i < wavetable.length; i++)
             for(var j = 0; j < wavetable[i].array.length; j++)
-                b[offsets[i] + j] = Math.round(wavetable[i].array[j] * 127);
+                // b[offsets[i] + j] = Math.round(wavetable[i].array[j] * 127);
+                b[offsets[i] + j] = wavetable[i].array[j];
         
         var text = "const int " + name + "Offsets[] = {"
         for(var i = 0; i < offsets.length; i++)
             text += offsets[i] + ", ";
         text += "};\r\n";
         
-        text += "const signed char " + name + "Samples[] = {"
+        text += "const int16_t " + name + "Samples[] = {"
         for(var i = 0; i < b.length; i++)
         {
             if((i & 63) == 0) text += "\r\n";
