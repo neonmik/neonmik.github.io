@@ -1,11 +1,11 @@
 <head>
-    <title>Nick's Watable Editor</title>
+    <title>Nick's Wavetable Editor</title>
     <script>
     window.AudioContext = window.AudioContext || window.webkitAudioContext;
     var context = new AudioContext();
     
     var project = {
-        name: "sounds",
+        name: "wavetable",
         sampleRate: 44100,
         normalize: true,
         wavetable: []
@@ -170,7 +170,7 @@
         for(var i = 0; i < wavetable.length; i++)
             for(var j = 0; j < wavetable[i].array.length; j++)
                 // b[offsets[i] + j] = Math.round(wavetable[i].array[j] * 127);
-                b[offsets[i] + j] = wavetable[i].array[j];
+                b[offsets[i] + j] = Math.round(wavetable[i].array[j] * 32767);
         
         var text = "const int " + name + "Offsets[] = {"
         for(var i = 0; i < offsets.length; i++)
