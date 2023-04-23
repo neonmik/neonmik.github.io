@@ -7,6 +7,8 @@
     var project = {
         name: "wavetable",
         sampleRate: 44100,
+        bitDepth:   8,
+        isSigned: true;
         normalize: true,
         wavetable: []
         };
@@ -160,29 +162,65 @@
         return buffer;
     }
     
-    function wavetableToHeader(name, sampleRate)
-    {
+    function wavetableToHeader(name, sampleRate, bitRate, isSigned) {
         var wavetable = project.wavetable;
         var offsets = [0];
-        for(var i = 0; i < wavetable.length; i++)
+        for (var i = 0; i < wavetable.length; i++)
             offsets.push(offsets[i] + wavetable[i].array.length);
-        var b = new Int16Array(offsets[offsets.length - 1]);
-        for(var i = 0; i < wavetable.length; i++)
-            for(var j = 0; j < wavetable[i].array.length; j++)
-                // b[offsets[i] + j] = Math.round(wavetable[i].array[j] * 127);
-                b[offsets[i] + j] = Math.round(wavetable[i].array[j] * 32767);
-        
-        var text = "const int " + name + "Offsets[] = {"
-        for(var i = 0; i < offsets.length; i++)
+        var b;
+        switch (bitRate) {
+            case 8:
+                b = new Int8Array(offsets[offsets.length - 1]);
+                for (var i = 0; i < wavetable.length; i++)
+                    for (var j = 0; j < wavetable[i].array.length; j++) {
+                        var value = wavetable[i].array[j] * 0.5 + 0.5;
+                        if (isSigned) {
+                            value = value * 2 - 1;
+                        }
+                        b[offsets[i] + j] = Math.round(value * 127);
+                    }
+                break;
+            case 16:
+                b = new Int16Array(offsets[offsets.length - 1]);
+                for (var i = 0; i < wavetable.length; i++)
+                    for (var j = 0; j < wavetable[i].array.length; j++) {
+                        var value = wavetable[i].array[j];
+                        if (isSigned) {
+                            value = value * 2 - 1;
+                        }
+                        b[offsets[i] + j] = Math.round(value * 32767);
+                    }
+                break;
+            default:
+                console.error("Invalid bit rate");
+                return;
+        }
+        var text = "";
+        if (bitRate === 16) {
+            if (isSigned) {
+                text = "const int16_t " + name + "Samples[] = {";
+            }
+            else {
+                text = "const uint16_t " + name + "Samples[] = {";
+            }
+        } else {
+            if (isSigned) {
+                text = "const int8_t " + name + "Samples[] = {";
+            }
+            else {
+                text = "const uint8_t " + name + "Samples[] = {";
+            }
+        }
+        for (var i = 0; i < b.length; i++) {
+            if ((i & 63) == 0) text += "\r\n";
+            text += b[i] + "," + "  ";
+        }
+        var text = "const int " + name + "Offsets[] = {";
+        for (var i = 0; i < offsets.length; i++)
             text += offsets[i] + ", ";
         text += "};\r\n";
-        
-        text += "const int16_t " + name + "Samples[] = {"
-        for(var i = 0; i < b.length; i++)
-        {
-            if((i & 63) == 0) text += "\r\n";
-            text += b[i] + ", ";
-        }
+
+       
         text += "};\r\n";
         text += "Wavetable " + name + "(" + name + "Samples, " + wavetable.length + ", " + name + "Offsets, " + sampleRate + ");\r\n";
         return text;
@@ -381,6 +419,13 @@
                 <span class="option">name <input id="name" type="text" value="sounds" style="width: 80px" onchange="update()"></span>
                 <span class="option"><input id="normalize" type="checkbox" checked onchange="update()">normalize</span>
                 <span class="option">sampling rate <input id="samplerate" type="number" value="44100" style="width: 60px" onchange="update()"></span>
+                <span class="option"><input id="isSigned" type="checkbox" checked onchange="update()">signed</span>
+                <span class="option">bit depth 
+                    <select id="bitDepth" onchange="update()">
+                        <option value="8">8 bit</option>
+                        <option value="16">16 bit</option>
+                    </select>
+                </span>
             </span>
         </div>
         <div class="hidden" id="files">
